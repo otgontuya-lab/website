@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дэлхийн улс төрийн бодлого</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family:'Times New Roman', Times, serif , sans-serif;
+        }
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 30px;
+        }
+
+        .form-container {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #4da6f3;
+        }
+
+        .assignments-container {
+            margin-top: 30px;
+        }
+
+        .assignment-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #1a73e8;
+        }
+
+        .assignment-card h3 {
+            color: #4da6f3;
+            margin-bottom: 10px;
+        }
+
+        .assignment-card p {
+            margin-bottom: 8px;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            float: right;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 5px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+
+        .file-icon {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: #dc3545;
+            margin-top: 5px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .file-input-container {
+            margin-bottom: 15px;
+        }
+
+        .file-label {
+            display: inline-block;
+            background-color: lightblue;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .file-label:hover {
+            background-color: #4da6f3;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Дэлхийн улс төрийн бодлого</h1>
+        
+        <div class="form-container">
+            <div class="input-group">
+                <label for="title">Гарчиг:</label>
+                <input type="text" id="title" required>
+            </div>
+
+            <div class="input-group">
+                <label for="type">Төрөл:</label>
+                <select id="type">
+                    <option value="assignment">Бие даалт</option>
+                    <option value="review">Номын шүүмж</option>
+                </select>
+            </div>
+
+            <div class="file-input-container">
+                <label for="file" class="file-label">
+                    Файл сонгох
+                </label>
+                <input type="file" id="file" accept=".ppt,.pptx,.doc,.docx" onchange="validateFile()">
+                <div id="fileInfo"></div>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+
+            <button onclick="saveAssignment()">Хадгалах</button>
+        </div>
+
+        <div class="filters">
+            <select id="filterType" onchange="filterAssignments()">
+                <option value="all">Бүгд</option>
+                <option value="assignment">Зөвхөн бие даалт</option>
+                <option value="review">Зөвхөн номын шүүмж</option>
+            </select>
+        </div>
+
+        <div class="assignments-container" id="assignmentsList">
+            <!-- Assignments will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage
+        let assignments = [];
+
+        function validateFile() {
+            const fileInput = document.getElementById('file');
+            const errorMessage = document.getElementById('errorMessage');
+            const fileInfo = document.getElementById('fileInfo');
+            const allowedExtensions = ['.ppt', '.pptx', '.doc', '.docx'];
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileName = file.name.toLowerCase();
+                const extension = fileName.substring(fileName.lastIndexOf('.'));
+
+                if (!allowedExtensions.includes(extension)) {
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = 'Зөвхөн PPT болон DOC файл оруулна уу!';
+                    fileInput.value = '';
+                    fileInfo.innerHTML = '';
+                    return false;
+                }
+
+                errorMessage.style.display = 'none';
+                fileInfo.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-icon">${getFileIcon(extension)}</span>
+                        ${file.name} (${formatFileSize(file.size)})
+                    </div>
+                `;
+                return true;
+            }
+            return true;
+        }
+
+        function getFileIcon(extension) {
+            switch (extension) {
+                case '.ppt':
+                case '.pptx':
+                    return '📊';
+                case '.doc':
+                case '.docx':
+                    return '📄';
+                default:
+                    return '📎';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function saveAssignment() {
+            const title = document.getElementById('title').value;
+            const type = document.getElementById('type').value;
+            const fileInput = document.getElementById('file');
+
+            if (!title) {
+                alert('Гарчгийг бөглөнө үү!');
+                return;
+            }
+
+            if (!validateFile()) {
+                return;
+            }
+
+            const assignment = {
+                id: Date.now(),
+                title,
+                type,
+                createdAt: new Date().toISOString(),
+                fileName: fileInput.files.length > 0 ? fileInput.files[0].name : null,
+                fileSize: fileInput.files.length > 0 ? fileInput.files[0].size : null
+            };
+
+            // Add to in-memory array
+            assignments.push(assignment);
+            
+            // Clear form
+            document.getElementById('title').value = '';
+            document.getElementById('file').value = '';
+            document.getElementById('fileInfo').innerHTML = '';
+
+            // Refresh display
+            displayAssignments();
+        }
+
+        function deleteAssignment(id) {
+            if (confirm('Устгахдаа итгэлтэй байна уу?')) {
+                assignments = assignments.filter(assignment => assignment.id !== id);
+                displayAssignments();
+            }
+        }
+
+        function filterAssignments() {
+            displayAssignments();
+        }
+
+        function displayAssignments() {
+            const filterType = document.getElementById('filterType').value;
+            const container = document.getElementById('assignmentsList');
+            container.innerHTML = '';
+
+            const filteredAssignments = filterType === 'all' 
+                ? assignments 
+                : assignments.filter(a => a.type === filterType);
+
+            filteredAssignments
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .forEach(assignment => {
+                    const card = document.createElement('div');
+                    card.className = 'assignment-card';
+                    
+                    let fileInfo = '';
+                    if (assignment.fileName) {
+                        const extension = assignment.fileName.substring(assignment.fileName.lastIndexOf('.'));
+                        fileInfo = `
+                            <div class="file-info">
+                                <span class="file-icon">${getFileIcon(extension)}</span>
+                                ${assignment.fileName} (${formatFileSize(assignment.fileSize)})
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <h3>${assignment.title}</h3>
+                        <p><strong>Төрөл:</strong> ${assignment.type === 'assignment' ? 'Бие даалт' : 'Номын шүүмж'}</p>
+                        ${fileInfo}
+                        <button class="delete-btn" onclick="deleteAssignment(${assignment.id})">Устгах</button>
+                    `;
+                    container.appendChild(card);
+                });
+        }
+    </script>
+</body>
+</html>
